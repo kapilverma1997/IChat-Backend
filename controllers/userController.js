@@ -13,6 +13,23 @@ module.exports.getAllUser = catchAsync(
     }
 )
 
+module.exports.getUserByEmail = catchAsync(
+    async (req, res, next) => {
+        const { EmailAddress } = req.body
+
+        if (!EmailAddress) {
+            return next(new AppError('EmailAddress is required', 400))
+        }
+
+        const user = await User.findOne({ EmailAddress })
+        if (!user) {
+            return sendResponse(res, 404, {}, 'User not found')
+        }
+
+        return sendResponse(res, 200, user)
+    }
+)
+
 module.exports.getUser = catchAsync(
     async (req, res) => {
         const { userID } = req.params
@@ -60,18 +77,53 @@ exports.login = catchAsync(async (req, res, next) => {
     createSendToken(user, 200, res)
 })
 
-exports.signup = catchAsync(async (req, res) => {
+exports.signup = catchAsync(async (req, res, next) => {
     console.log('req.body in signup', req.body);
-    const { FirstName, LastName, EmailAddress, Gender, Password } = req.body
-
-    const UserExists = await User.findOne({ EmailAddress })
-    if (UserExists) return sendResponse(res, 400, {}, 'User already exists')
-
-    const newUser = await User.create({
+    const {
         FirstName,
         LastName,
         EmailAddress,
         Gender,
+        PhoneNumber,
+        Country,
+        Password,
+        ConfirmPassword
+    } = req.body
+
+    // Basic required field validation
+    if (!FirstName || !LastName || !EmailAddress || !Gender || !PhoneNumber || !Country || !Password || !ConfirmPassword) {
+        return next(new AppError('Please fill in all required fields.', 400))
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(EmailAddress)) {
+        return next(new AppError('Please provide a valid email address.', 400))
+    }
+
+    // Password strength validation
+    if (Password.length < 8) {
+        return next(new AppError('Password must be at least 8 characters long.', 400))
+    }
+    if (!/[A-Z]/.test(Password) || !/[0-9]/.test(Password)) {
+        return next(new AppError('Password must contain at least one uppercase letter and one number.', 400))
+    }
+
+    // Confirm password match
+    if (Password !== ConfirmPassword) {
+        return next(new AppError('Password and confirm password do not match.', 400))
+    }
+
+    const UserExists = await User.findOne({ EmailAddress })
+    if (UserExists) return sendResponse(res, 400, {}, 'User already exists')
+
+    await User.create({
+        FirstName,
+        LastName,
+        EmailAddress,
+        Gender,
+        PhoneNumber,
+        Country,
         Password,
     })
 

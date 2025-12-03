@@ -4,10 +4,12 @@ const saltRounds = 10;
 const crypto = require('crypto')
 
 const userSchema = new mongoose.Schema({
-    FirstName: { type: String, required: true },
-    LastName: { type: String, required: true },
-    EmailAddress: { type: String, required: true },
-    Gender: { type: String, required: true },
+    FirstName: { type: String, required: true, trim: true },
+    LastName: { type: String, required: true, trim: true },
+    EmailAddress: { type: String, required: true, trim: true, lowercase: true },
+    Gender: { type: String, required: true, trim: true },
+    PhoneNumber: { type: String, required: true, trim: true },
+    Country: { type: String, required: true, trim: true },
     Password: { type: String, required: true }
 })
 
